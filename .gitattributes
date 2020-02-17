@@ -1,2 +1,380 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+
+//Camera Create
+
+cam = view_camera[0];
+follow = oPlayer;
+view_w_half = camera_get_view_width(cam) * 0.5;
+view_h_half = camera_get_view_height(cam) * 0.5;
+xTo = xstart;
+yTo = ystart;
+
+shake_length = 0;
+shake_magnitude = 0;
+shake_remain = 0;
+buff = 32;
+
+//Camera Step
+
+//update destination
+if (instance_exists(follow))
+{
+  xTo = follow.x;
+  yTo = follow.y;
+
+  if ((follow).object_index == oPDead)
+  {
+	x = xTo;
+	y = yTo;
+
+  }
+
+}
+
+//update object position
+x += (xTo - x) / 25;
+y += (yTo - y) / 25;
+
+//keep camera inside room
+x = clamp(x,view_w_half+buff,room_width-view_w_half-buff);
+y = clamp(y,view_h_half+buff,room_height-view_h_half-buff);
+
+// screenshake
+x += random_range(-shake_remain,shake_remain);
+y += random_range(-shake_remain,shake_remain);
+shake_remain = max(0,shake_remain-((1/shake_length)*shake_magnitude));
+
+//update camera view
+camera_set_view_pos(cam,x - view_w_half,y - view_h_half);
+
+if(layer_exists("Pipes"))
+{
+	layer_x("Pipes",x/4);
+}
+
+if(layer_exists("Machines"))
+{
+	layer_x("Machines",x/4);
+}
+
+//Game create counter
+
+#macro RES_W 1024
+#macro RES_H 768
+display_set_gui_size(RES_W,RES_H);
+
+global.kills = 0;
+global.killsthisroom = 0;
+killtextscale = 1;
+
+//Game DrawGUI
+
+if (room != rMenu) && (instance_exists(oPlayer)) && (global.kills > 0 )
+{
+	killtextscale = max(killtextscale * 0.95, 1);
+	DrawSetText(c_black,fMenu,fa_right,fa_top);
+	draw_text_transformed(RES_W-8,12,string(global.kills) + " Enemies Defeated ", killtextscale,killtextscale,0)
+	draw_set_colour(c_white);
+	draw_text_transformed(RES_W-10,10,string(global.kills) + " Enemies Defeated ", killtextscale,killtextscale,0)
+}
+
+//Game Fullscreen
+
+if (keyboard_check(vk_control))
+{
+	window_set_fullscreen(!window_get_fullscreen());
+	}
+
+  //Game Room Start
+
+  global.killsthisroom = 0;
+
+
+  // Counters
+
+  global.key_counter = 0;
+global.block_counter = 0;
+global.block_counter2 = 0;
+global.block_counter3 = 0;
+
+// Level End
+
+with (oPlayer)
+{
+	if (hascontrol)
+	{
+		hascontrol = false;
+		SlideTransition(TRANS_MODE.GOTO,other.target);
+
+	}
+}
+
+//Room Menu
+
+#macro SAVEFILE "Save.sav"
+
+gui_width = display_get_gui_width();
+gui_height = display_get_gui_height();
+gui_margin = 32;
+
+menu_x = gui_width + 200;
+menu_y = gui_height - gui_margin;
+menu_x_target = gui_width - gui_margin;
+menu_speed = 25; //lower is faster
+menu_font = fMenu;
+menu_itemheight = font_get_size(fMenu);
+menu_committed = -1;
+menu_control = true;
+
+menu[2] = "New Game";
+menu[1] = "Continue";
+menu[0] = "Quit";
+
+menu_items = array_length_1d(menu);
+
+menu_top = menu_y - ((menu_itemheight * 1.5) * menu_items);
+
+menu_cursor = 2;
+
+
+//Room Control menu
+
+//Item ease in
+menu_x += (menu_x_target - menu_x) / menu_speed;
+
+//keyboard controls
+
+if (menu_control)
+{
+	if (keyboard_check_pressed(vk_up)) or (keyboard_check_pressed(ord("W")))
+	{
+		menu_cursor++;
+		if (menu_cursor >= menu_items) menu_cursor = 0;
+	}
+	if (keyboard_check_pressed(vk_down)) or (keyboard_check_pressed(ord("S")))
+	{
+		menu_cursor--;
+		if (menu_cursor < 0) menu_cursor = menu_items - 1;
+	}
+
+	if (keyboard_check_pressed(vk_enter))
+	{
+	   menu_x_target = gui_width+200;
+	   menu_committed = menu_cursor;
+	   ScreenShake(4,30);
+	   menu_control = false;
+	   audio_play_sound(snDeath,10,false);
+	}
+
+	var mouse_y_gui = device_mouse_y_to_gui(0);
+	if (mouse_y_gui < menu_y) && (mouse_y_gui > menu_top)
+	{
+		menu_cursor = (menu_y - mouse_y_gui) div (menu_itemheight * 1.5);
+
+		if (mouse_check_button_pressed(mb_left))
+		{
+		  menu_x_target = gui_width+200;
+	      menu_committed = menu_cursor;
+	      ScreenShake(4,30);
+	      menu_control = false;
+	      audio_play_sound(snDeath,10,false);
+		}
+
+
+
+	}
+}
+
+if (menu_x > gui_width+150) && (menu_committed != -1)
+{
+	switch (menu_committed)
+	{
+		case 2: SlideTransition(TRANS_MODE.NEXT); break;
+		case 1:
+		{
+			if (!file_exists(SAVEFILE))
+			{
+				SlideTransition(TRANS_MODE.NEXT); break;
+			}
+			else
+			{
+			var file = file_text_open_read(SAVEFILE);
+			var target = file_text_read_real(file);
+			file_text_close(file);
+			SlideTransition(TRANS_MODE.GOTO,target);
+			}
+
+		}
+		break;
+		case 0: game_end(); break;
+
+	}
+}
+
+
+// Room GUI
+
+draw_set_font(fMenu);
+draw_set_halign(fa_right);
+draw_set_valign(fa_bottom);
+
+for (var i = 0; i < menu_items; i++)
+{
+	var offset = 2;
+	var txt = menu[i];
+	if (menu_cursor == i)
+	{
+	txt = string_insert("> ", txt, 0);
+	var col = c_white;
+	}
+	else
+	{
+		var col = c_gray;
+	}
+	var xx = menu_x;
+	var yy = menu_y - (menu_itemheight * (i *1.5));
+	draw_set_color(c_black);
+	draw_text(xx-offset,yy,txt);
+	draw_text(xx+offset,yy,txt);
+	draw_text(xx,yy+offset,txt);
+	draw_text(xx,yy-offset,txt);
+	draw_set_color(col);
+	draw_text(xx,yy,txt);
+}
+
+draw_set_color(c_black);
+draw_rectangle(gui_width,gui_height-200,gui_width+900,gui_height,false);
+
+//Transition Create
+
+w = display_get_width();
+h = display_get_gui_height();
+h_half = h * 0.5;
+enum TRANS_MODE
+{
+  OFF,
+  NEXT,
+  GOTO,
+  RESTART,
+  INTRO
+}
+mode = TRANS_MODE.INTRO;
+percent = 1;
+target = room;
+
+//Transition Step
+
+if (mode != TRANS_MODE.OFF)
+{
+	if (mode == TRANS_MODE.INTRO)
+	{
+		percent = max(0,percent -max((percent/10),0.005));
+	}
+
+	else
+	{
+		percent = min(1,percent +max(((1 - percent)/10),0.005));
+	}
+   if (percent == 1) || (percent == 0)
+   {
+	   switch (mode)
+   {
+	   case TRANS_MODE.INTRO:
+	   {
+		   mode = TRANS_MODE.OFF;
+		   break;
+	   }
+	   case TRANS_MODE.NEXT:
+	   {
+		   mode = TRANS_MODE.INTRO;
+		   room_goto_next();
+		   break;
+	   }
+	   case TRANS_MODE.GOTO:
+	   {
+		   mode = TRANS_MODE.INTRO;
+		   room_goto(target);
+		   break;
+	   }
+	   case TRANS_MODE.RESTART:
+	   {
+		   game_restart();
+		   break;
+	   }
+      }
+     }
+    }
+
+//Transition GUI
+
+if (mode != TRANS_MODE.OFF)
+{
+  draw_set_color(c_black);
+  draw_rectangle(0,0,w,percent*h_half,false);
+  draw_rectangle(0,h,w,h-(percent*h_half),false);
+}
+
+//Text Create
+
+spd = 0.25;
+letters = 0;
+text = "Insert text here!";
+length = string_length(text);
+text_current = "";
+w = 0;
+h = 0;
+border = 10;
+
+//text Step
+
+letters += spd;
+text_current = string_copy(text,1,floor(letters));
+
+draw_set_font(fSign);
+if ( h == 0 ) h = string_height(text);
+w = string_width(text_current);
+
+// destroy when done
+
+if (letters >= length) && (keyboard_check_pressed(vk_anykey))
+{
+	instance_destroy();
+	with (oCamera) follow = oPlayer;
+}
+
+//text draw
+
+var halfw = w * 0.5;
+
+//draw the box
+draw_set_color(c_black);
+draw_set_alpha(0.5);
+draw_roundrect_ext(x-halfw-border,y-h-(border*2),x+halfw+border,y,15,15,false);
+draw_sprite(sMarker,0,x,y);
+draw_set_alpha(1);
+
+//draw text
+DrawSetText(c_white,fSign,fa_center,fa_top);
+draw_text(x,y-h-border,text_current);
+
+//floating text
+
+text = other.text;
+length = string_length(text);
+
+
+draw_set_font(fSign);
+draw_set_colour(c_black);
+draw_text_transformed(oFloat.x+100,oFloat.y+20,text,0.8,0.8,image_angle);
+
+y = ystart + sin(get_timer()/500000)*5;
+
+//Music Roomstart
+
+audio_play_sound(music,10,true);
+
+//Music Roomend
+
+audio_stop_sound(music);
