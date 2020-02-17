@@ -1,2 +1,371 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+Enemy Step event
+
+//GET Enemy INPUT
+
+
+vsp = vsp + grv;
+
+//Dont walk off edges
+if (grounded) && (afraidofheights) && (!place_meeting(x + hsp,y+1,oWall))
+{
+ hsp = -hsp;
+}
+
+//horizontal collusion
+if (place_meeting(x+hsp,y,oWall,))
+{
+	while (!place_meeting(x+sign(hsp),y,oWall,))
+	{
+	    x = x + sign(hsp);
+
+	}
+	hsp = -hsp;
+}
+
+if (place_meeting(x+hsp,y,oWall1,))
+{
+	while (!place_meeting(x+sign(hsp),y,oWall1,))
+	{
+	    x = x + sign(hsp);
+
+	}
+	hsp = -hsp;
+}
+
+x = x + hsp;
+
+//vertical collision
+
+if (place_meeting(x,y+vsp,oWall))
+{
+	while (!place_meeting(x,y+vsp,oWall))
+	{
+	   y= y + sign(vsp);
+
+	}
+	vsp = 0;
+}
+
+y = y + vsp;
+
+
+//animation
+
+
+if (!place_meeting(x,y+1,oWall))
+{
+	grounded = false;
+ sprite_index = sEnemyA;
+ image_speed = 0;
+  if (sign(vsp) > 0) image_index = 1; else image_index = 0;
+
+
+}
+else
+{
+	grounded = true;
+	image_speed = 1;
+	if (hsp == 0)
+	{
+		sprite_index = sEnemy;
+
+	}
+	else
+	{
+		sprite_index = sEnemyR;
+
+	}
+
+
+}
+
+if (hsp !=0) image_xscale = sign(hsp) * size;
+
+image_yscale = size;
+
+// Enemy Begin Step
+
+if (hp <= 0)
+{
+
+with (instance_create_layer(x,y,layer,oDead))
+{
+
+  direction = other.hitfrom;
+  hsp = lengthdir_x(3,direction);
+  vsp = lengthdir_y(3,direction)-2;
+  if (sign(hsp) != 0) image_xscale = sign(hsp) * other.size;
+    image_yscale = other.size;
+
+}
+
+instance_destroy();
+  if (instance_exists(oPlayer))
+{
+  global.kills++;
+  global.killsthisroom++;
+  with (oGame) killtextscale = 2;
+}
+
+
+}
+
+//Enemy Dead Create
+hsp = 0;
+vsp = 0;
+grv = 0.3;
+done = 0;
+ScreenShake(6,25);
+image_speed = 0;
+audio_play_sound(snDeath,10,false);
+
+//Enemy Dead Step
+if (done == 0)
+	{
+
+	vsp = vsp + grv;
+
+
+
+	//horizontal collusion
+	if (place_meeting(x+hsp,y,oWall))
+	{
+		while (!place_meeting(x+sign(hsp),y,oWall))
+		{
+		    x = x + sign(hsp);
+
+		}
+		hsp = 0;
+	}
+
+	x = x + hsp;
+
+	//vertical collision
+
+	if (place_meeting(x,y+vsp,oWall))
+	{
+		if (vsp > 0)
+		{
+			done = 1;
+			image_index = 1;
+		}
+		while (!place_meeting(x,y+vsp,oWall))
+		{
+		   y= y + sign(vsp);
+
+		}
+		vsp = 0;
+	}
+
+	y = y + vsp;
+
+	}
+
+  //Player Create
+
+  hsp = 0;
+  vsp = 0;
+  grv = 0.3;
+  walksp = 4;
+  hascontrol = true;
+  canjump = 0;
+
+  audio_sound_pitch(snShot,0.8);
+
+  //Player Step event
+
+  //GET PLAYER INPUT
+if (hascontrol)
+{
+key_left = keyboard_check(vk_left) or keyboard_check(ord("A"));
+key_right = keyboard_check(vk_right) or keyboard_check(ord("D"));
+key_jump = keyboard_check_pressed(vk_space);
+}
+else
+{
+	key_right = 0;
+	key_left = 0;
+	key_jump = 0;
+}
+// calculate movement
+var move = key_right - key_left;
+
+hsp = move * walksp;
+
+vsp = vsp + grv;
+
+//jumping
+canjump -= 1;
+if (canjump > 0) and (key_jump)
+{
+    vsp = -7;
+	canjump = 0;
+}
+
+//horizontal collusion
+if (place_meeting(x+hsp,y,oWall))
+{
+	while (!place_meeting(x+sign(hsp),y,oWall))
+	{
+	    x = x + sign(hsp);
+
+	}
+	hsp = 0;
+}
+
+x = x + hsp;
+
+//vertical collision
+
+if (place_meeting(x,y+vsp,oWall))
+{
+	while (!place_meeting(x,y+vsp,oWall))
+	{
+	   y= y + sign(vsp);
+
+	}
+	vsp = 0;
+}
+
+y = y + vsp;
+
+
+//animation
+
+
+if (!place_meeting(x,y+1,oWall))
+{
+ sprite_index = sPlayerA;
+ image_speed = 0;
+  if (sign(vsp) > 0) image_index = 1; else image_index = 0;
+
+
+}
+else
+{
+	canjump = 10;
+	if (sprite_index == sPlayerA)
+	{
+		audio_sound_pitch(snLanding,choose(0.8,1.0,1.2));
+		audio_play_sound(snLanding,4,false);
+		repeat(5)
+		{
+			with (instance_create_layer(x,bbox_bottom,"Bullets",oDust))
+			{
+			vsp = 0;
+			}
+
+		}
+	}
+
+	image_speed = 1;
+	if (hsp == 0)
+	{
+		sprite_index = sPlayer;
+
+	}
+	else
+	{
+		sprite_index = sPlayerR;
+
+	}
+
+
+}
+
+if (hsp !=0) image_xscale = sign(hsp) ;
+
+
+//Player KeypressR
+
+SlideTransition(TRANS_MODE.RESTART);
+
+//Player collission with (enemy)
+
+KillPlayer();
+
+//Player room start
+
+// overwrite old save
+if (file_exists(SAVEFILE)) file_delete(SAVEFILE);
+
+
+//CREATE NEW SAVE
+
+var file;
+file = file_text_open_write(SAVEFILE);
+file_text_write_real(file,room);
+file_text_close(file);
+
+
+//Player animationend
+
+if ( sprite_index == sPlayerR) audio_play_sound(choose(snFoot1,snFoot2,snFoot3,snFoot4),1,false);
+
+//Player dead sprite create
+
+hsp = 0;
+vsp = 0;
+grv = 0.2;
+done = 0;
+
+image_speed = 0;
+image_index = 0;
+
+ScreenShake(6,60);
+audio_play_sound(snDeath,10,false);
+game_set_speed(45,gamespeed_fps);
+with (oCamera) follow = other.id;
+
+
+//Player dead step event
+
+if (done == 0)
+	{
+
+	vsp = vsp + grv;
+
+
+
+	//horizontal collusion
+	if (place_meeting(x+hsp,y,oWall))
+	{
+		while (!place_meeting(x+sign(hsp),y,oWall))
+		{
+		    x = x + sign(hsp);
+
+		}
+		hsp = 0;
+	}
+
+	x = x + hsp;
+
+	//vertical collision
+
+	if (place_meeting(x,y+vsp,oWall))
+	{
+		if (vsp > 0)
+		{
+			done = 1;
+			image_index = 1;
+			alarm[0] = 60;
+		}
+		while (!place_meeting(x,y+vsp,oWall))
+		{
+		   y= y + sign(vsp);
+
+		}
+		vsp = 0;
+	}
+
+	y = y + vsp;
+
+	}
+
+  //Player dead (slowmo)
+
+  game_set_speed(60,gamespeed_fps);
+SlideTransition(TRANS_MODE.GOTO,room);
