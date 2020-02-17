@@ -1,2 +1,126 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+//GUN CREATE
+
+recoil = 0;
+firingdelay = 0;
+
+//Gun Step
+
+x = oPlayer.x;
+y = oPlayer.y+5;
+
+image_angle = point_direction(x,y,mouse_x,mouse_y);
+
+firingdelay = firingdelay -1;
+recoil = max(0,recoil -1);
+
+if (mouse_check_button(mb_left)) && (firingdelay < 0 )
+{
+	recoil = 4;
+	firingdelay = 5;
+	ScreenShake(2,10)
+	audio_sound_pitch(snShot,choose(0.8,1.0,1.2));
+	audio_play_sound(snShot,5,false);
+
+	with (instance_create_layer(x,y,"Bullets",oBullet))
+	{
+		spd = 24;
+		direction = other.image_angle + random_range(-3,3);
+		image_angle = direction;
+	}
+}
+
+x = x - lengthdir_x(recoil,image_angle);
+y = y - lengthdir_y(recoil,image_angle);
+
+if (image_angle > 90) && (image_angle <270)
+{
+	image_yscale = -1;
+}
+else
+{
+	image_yscale = 1;
+}
+
+
+//ENemy gun Create
+
+countdownrate = 40;
+countdown = countdownrate;
+
+//Enemy gun Step
+
+x = owner.x;
+y = owner.y;
+
+image_xscale = abs(owner.image_xscale);
+image_yscale = abs(owner.image_yscale);
+
+if (instance_exists(oPlayer))
+{
+	if (oPlayer.x < x) image_yscale = -image_yscale;
+	if (point_distance(oPlayer.x,oPlayer.y,x,y) < 600)
+	{
+		image_angle = point_direction(x,y,oPlayer.x,oPlayer.y);
+		countdown--;
+		if (countdown <= 0)
+		{
+			countdown = countdownrate;
+
+			{
+
+			//No collision detection, part 21
+
+
+			audio_sound_pitch(snShot,choose(0.8,1.0,1.2));
+			audio_play_sound(snShot,5,false);
+			with (instance_create_layer(x,y,"Bullets",oEbullet))
+	{
+		spd = 3;
+		direction = other.image_angle + random_range(-3,3);
+		image_angle = direction;
+	}
+		 }
+		}
+	}
+}
+
+// Bullet step
+
+x += lengthdir_x(spd,direction);
+y += lengthdir_y(spd,direction);
+
+
+if (place_meeting(x,y,pShootable))
+  {
+
+
+   with (instance_place(x,y,pShootable))
+     {
+	 hp--;
+	 flash = 3;
+	 hitfrom	= other.direction;
+     }
+    instance_destroy();
+  }
+
+
+if (place_meeting(x,y,oWall)) && (image_index != 0)
+{
+	while (place_meeting(x,y,oWall))
+	{
+
+		x -= lengthdir_x(1,direction);
+		y -= lengthdir_y(1,direction);
+	}
+	spd = 0;
+	instance_change(oHitSpark,true);
+}
+
+
+//Bullet Animation End
+
+image_speed = 0;
+image_index = 1;
