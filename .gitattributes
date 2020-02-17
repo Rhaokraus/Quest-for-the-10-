@@ -1,2 +1,48 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+KillPlayer
+
+with (oGun) instance_destroy();
+instance_change(oPDead,true);
+
+direction = point_direction(other.x,other.y,x,y);
+hsp = lengthdir_x(6,direction);
+vsp = lengthdir_y(4,direction)-2;
+if (sign(hsp) != 0) image_xscale = sign(hsp);
+instance_destroy(oLaserGun);
+instance_destroy(oGun);
+
+----------------------------
+
+SlideTransition
+
+with (oTransition)
+{
+	mode = argument[0];
+	if (argument_count > 1) target = argument[1];
+}
+
+------------------------------
+
+ScreenShake
+
+with (oCamera)
+{
+	if (argument0 > shake_remain)
+	{
+		shake_magnitude = argument0;
+		shake_remain = argument0;
+		shake_length = argument1;
+	}
+
+}
+
+---------------------------------
+
+DrawSetText
+
+draw_set_colour(argument0);
+draw_set_font(argument1);
+draw_set_halign(argument2);
+draw_set_valign(argument3);
