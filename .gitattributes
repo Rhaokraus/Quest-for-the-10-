@@ -1,2 +1,61 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+
+//Make Objects float STEP
+
+y = ystart + sin(get_timer()/500000)*5;
+
+
+//Collect items on player collision and make a sound
+
+audio_play_sound(snPickup,15,false);
+instance_destroy();
+
+
+// TARGETS AND INDESTRUCTIBLE WALLS
+
+//When you destroy a colored target
+
+global.block_counter++;
+
+// Destroy the wall when counter reaches limit (different counter for each wall)
+
+if(global.block_counter == 1) instance_destroy();
+
+//SIGN and Books when you press right click
+
+if (point_in_circle(oPlayer.x,oPlayer.y,x,y,64)) && (!instance_exists(oText))
+{
+	with (instance_create_layer(x,y-64,layer,oText))
+	{
+	text = other.text;
+	length = string_length(text);
+	}
+	with (oCamera)
+	{
+	follow = other.id;
+	}
+}
+
+// Breakable Obstacles (child of pshootable)
+
+//Begin step
+
+if (hp <= 0) instance_destroy();
+
+//Draw step
+
+draw_self();
+
+if (flash > 0)
+{
+	flash--;
+shader_set(shWhite);
+draw_self();
+shader_reset();
+}
+
+//Collision with BIG enemy
+
+instance_destroy();
